@@ -8,6 +8,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 
 public class MarkdownToWordConverter {
     public static void main(String[] args) {
@@ -79,24 +80,29 @@ public class MarkdownToWordConverter {
             XWPFRun run = paragraph.createRun();
             run.setText(textNode.getText());
         } else if (node instanceof TableNode) {
-            TableNode tableNode = (TableNode) node;
-            XWPFTable table = document.createTable();
-            for (Node rowNode : tableNode.getChildren()) {
-                if (rowNode instanceof TableRowNode) {
-                    TableRowNode row = (TableRowNode) rowNode;
-                    XWPFTableRow tableRow = table.createRow();
-                    for (Node cellNode : row.getChildren()) {
-                        if (cellNode instanceof TableCellNode) {
-                            TableCellNode cell = (TableCellNode) cellNode;
-                            XWPFTableCell tableCell = tableRow.createCell();
-                            tableCell.setText(extractText(cell));
-                        }
-                    }
-                }
-            }
+            createTable((TableNode) node, document);
         } else {
             for (Node child : node.getChildren()) {
                 processNode(child, document);
+            }
+        }
+    }
+
+    private static void createTable(TableNode tableNode, XWPFDocument document) {
+        XWPFTable table = document.createTable();
+        boolean isHeader = true;
+        for (Node rowNode : tableNode.getChildren()) {
+            if (rowNode instanceof TableRowNode) {
+                TableRowNode row = (TableRowNode) rowNode;
+                XWPFTableRow tableRow = isHeader ? table.getRow(0) : table.createRow();
+                isHeader = false;
+                for (Node cellNode : row.getChildren()) {
+                    if (cellNode instanceof TableCellNode) {
+                        TableCellNode cell = (TableCellNode) cellNode;
+                        XWPFTableCell tableCell = tableRow.addNewTableCell();
+                        tableCell.setText(extractText(cell));
+                    }
+                }
             }
         }
     }
